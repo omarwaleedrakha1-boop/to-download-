@@ -84,23 +84,30 @@
 
     <div class="container">
         <div class="main-card text-center">
-            <!-- اسمك منور في نص الموقع -->
+            <!-- اسمك المميز -->
             <h1 class="brand-title mb-2">Omar Rakha</h1>
             <h4 class="mb-4 text-light">مُحمل فيديوهات السوشيال ميديا 🎬</h4>
-            <p class="text-muted small">حمل من: TikTok, Instagram, Facebook, YouTube, X (Twitter)</p>
+            
+            <!-- التطبيقات المدعومة بوضوح -->
+            <div class="d-flex justify-content-center gap-2 mb-4 small text-muted">
+                <span class="badge bg-dark border border-danger">تيك توك</span>
+                <span class="badge bg-dark border border-danger">إنستجرام</span>
+                <span class="badge bg-dark border border-danger">فيسبوك</span>
+                <span class="badge bg-dark border border-danger">تويتر (X)</span>
+            </div>
             
             <!-- حقل الرابط -->
             <div class="mt-4">
                 <div class="mb-3">
-                    <input type="url" id="videoUrl" class="form-control form-control-lg text-center" placeholder="انسخ رابط الفيديو وضعه هنا..." required>
+                    <input type="url" id="videoUrl" class="form-control form-control-lg text-center" placeholder="انسخ رابط الفيديو المباشر وضعه هنا..." required>
                 </div>
-                <button onclick="downloadVideo()" class="btn btn-red btn-lg w-100" id="btnSubmit">استخراج الفيديو المباشر 📥</button>
+                <button onclick="downloadVideo()" class="btn btn-red btn-lg w-100" id="btnSubmit">استخراج وتجهيز الفيديو 📥</button>
             </div>
 
             <!-- مؤشر الانتظار -->
             <div class="loading-spinner mt-4" id="spinner">
                 <div class="spinner-border" role="status"></div>
-                <p class="mt-2 text-muted">جاري سحب الفيديو من السيرفر، ثواني يا حب...</p>
+                <p class="mt-2 text-muted">جاري سحب الفيديو وفك التشفير، ثواني يا غالي...</p>
             </div>
 
             <!-- النتيجة -->
@@ -108,16 +115,16 @@
         </div>
     </div>
 
-    <!-- كود الجافا سكريبت لجلب روابط السوشيال ميديا -->
+    <!-- الكود المحدث لحل مشكلة السيرفر -->
     <script>
         async function downloadVideo() {
-            const videoUrl = document.getElementById('videoUrl').value;
+            const videoUrl = document.getElementById('videoUrl').value.trim();
             const btnSubmit = document.getElementById('btnSubmit');
             const spinner = document.getElementById('spinner');
             const resultArea = document.getElementById('resultArea');
 
             if (!videoUrl) {
-                alert('حط الرابط الأول يا غالي!');
+                alert('حط رابط الفيديو الأول يا حب!');
                 return;
             }
 
@@ -126,8 +133,8 @@
             resultArea.innerHTML = '';
 
             try {
-                // استخدام API من cobalt لجلب الروابط مباشرة
-                const response = await fetch('https://api.cobalt.tools/', {
+                // استخدام عنوان الـ API المحدث والأكثر استقراراً
+                const response = await fetch('https://api.cobalt.tools/api/json', {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
@@ -135,25 +142,39 @@
                     },
                     body: JSON.stringify({
                         url: videoUrl,
-                        vQuality: '720'
+                        vQuality: '720',
+                        filenamePattern: 'classic',
+                        isAudioOnly: false,
+                        isNoTTWatermark: true // إزالة علامة تيك توك المائية تلقائياً
                     })
                 });
 
                 const data = await response.json();
 
-                if (data.status === 'stream' || data.status === 'picker' || data.url) {
-                    const finalUrl = data.url;
+                // لو السيرفر رجع رابط مباشر بنجاح
+                if (data.url) {
                     resultArea.innerHTML = `
-                        <div class="text-success mb-3">✨ تم تجهيز الفيديو بنجاح!</div>
-                        <a href="${finalUrl}" target="_blank" class="btn btn-download btn-lg w-100">اضغط هنا لبدء التحميل الفوري 🚀</a>
+                        <div class="text-success mb-3">✨ تم فك التشفير بنجاح!</div>
+                        <a href="${data.url}" target="_blank" download class="btn btn-download btn-lg w-100">اضغط هنا لبدء التحميل الفوري 🚀</a>
                     `;
+                } 
+                // بعض منصات السوشيال ميديا بترجع مجموعة روابط (Picker) واختيارات
+                else if (data.picker && data.picker.length > 0) {
+                    resultArea.innerHTML = `
+                        <div class="text-success mb-3">✨ تم العثور على جودات متعددة:</div>
+                        <a href="${data.picker[0].url}" target="_blank" class="btn btn-download btn-lg w-100">اضغط هنا للتحميل بأعلى جودة 🚀</a>
+                    `;
+                } 
+                // لو السيرفر واجه مشكلة في الرابط نفسه
+                else if (data.text) {
+                    resultArea.innerHTML = `<div class="alert alert-custom-danger">السيرفر بيقول: ${data.text}</div>`;
                 } else {
-                    resultArea.innerHTML = `<div class="alert alert-custom-danger">عذراً، لم نتمكن من جلب هذا الفيديو. تأكد من الرابط وجرب تاني.</div>`;
+                    resultArea.innerHTML = `<div class="alert alert-custom-danger">عذراً، الرابط ده مشفر بزيادة أو غير مدعوم حالياً. تأكد من نسخ "رابط المشاركة الفعلي" للفيديو وجرب تاني.</div>`;
                 }
 
             } catch (error) {
                 console.error(error);
-                resultArea.innerHTML = `<div class="alert alert-custom-danger">حدث خطأ في الاتصال، تأكد من إن الرابط شغال أو جرب لاحقاً.</div>`;
+                resultArea.innerHTML = `<div class="alert alert-custom-danger">حدث خطأ في الاتصال بالسيرفر. جرب رابط تاني أو ارفع الملف على الاستضافة وجرب لأن السيرفرات المحلية بتتحظر أحياناً.</div>`;
             } finally {
                 btnSubmit.disabled = false;
                 spinner.style.display = 'none';
