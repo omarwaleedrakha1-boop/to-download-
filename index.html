@@ -116,7 +116,7 @@
 
             <div class="loading-spinner mt-4" id="spinner">
                 <div class="spinner-border" role="status"></div>
-                <p class="mt-2 text-muted">جاري تجاوز الحماية وسحب الفيديو، ثواني يا غالي...</p>
+                <p class="mt-2 text-muted">جاري سحب الفيديو وفك التشفير، ثواني يا غالي...</p>
             </div>
 
             <div id="resultArea" class="mt-4"></div>
@@ -140,48 +140,49 @@
             resultArea.innerHTML = '';
 
             try {
-                // محاكاة الطلب وإرسال التوكنات المتغيرة المأخوذة من حماية السيرفر للتأمين الفوري
-                const response = await fetch('https://snaptwitt.com/wp-json/aiodl/v1/video', {
+                // إرسال الطلب لـ Cobalt API المستقر والمفتوح بدون قيود حماية الـ Cookies
+                const response = await fetch('https://api.cobalt.tools/api/json', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-WP-Nonce': 'ed7e9c3ea8', // كود نونس ووردبريس الموثق
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         url: videoUrl,
-                        token: 'fdc2a6182cdfe131c886dcd5885eab5a31886e70de1f5e5bf72df7f2b6414495' // التوكن الفعلي لتمرير العملية بنجاح
+                        vQuality: '720',
+                        filenamePattern: 'classic',
+                        isAudioOnly: false,
+                        isNoTTWatermark: true // إزالة علامة تيك توك المائية تلقائياً
                     })
                 });
 
                 const data = await response.json();
 
-                // التحقق من استجابة النظام وطباعة الأزرار الحمراء الفخمة
-                if (data && (data.url || data.links)) {
-                    let htmlCard = `<div class="text-success mb-3">🔥 تم العثور على الفيديو بنجاح وجاهز للتحميل:</div>`;
-                    
-                    if (data.links && data.links.length > 0) {
-                        // عرض الجودات المتعددة للفيديو إذا وجدت (مثال: HD, SD)
-                        data.links.forEach(link => {
-                            htmlCard += `
-                                <a href="${link.url}" target="_blank" download class="btn btn-download btn-lg w-100 mb-2">
-                                    📥 تحميل بجودة (${link.quality || 'عالية'})
-                                </a>`;
-                        });
-                    } else if (data.url) {
-                        htmlCard += `<a href="${data.url}" target="_blank" download class="btn btn-download btn-lg w-100">📥 تحميل الفيديو مباشر</a>`;
-                    }
-                    
+                // التحقق من استجابة النظام وطباعة الأزرار الحمراء الفخمة للتحميل المباشر
+                if (data.url) {
+                    resultArea.innerHTML = `
+                        <div class="text-success mb-3">🔥 تم تجهيز الفيديو بنجاح:</div>
+                        <a href="${data.url}" target="_blank" download class="btn btn-download btn-lg w-100">📥 اضغط هنا للتحميل الفوري</a>
+                    `;
+                } else if (data.picker && data.picker.length > 0) {
+                    // لو المنصة الممررة رجعت خيارات وجودات متعددة
+                    let htmlCard = `<div class="text-success mb-3">🔥 تم العثور على جودات متعددة:</div>`;
+                    data.picker.forEach((item, index) => {
+                        htmlCard += `
+                            <a href="${item.url}" target="_blank" class="btn btn-download btn-lg w-100 mb-2">
+                                📥 تحميل جودة رقم (${index + 1})
+                            </a>`;
+                    });
                     resultArea.innerHTML = htmlCard;
-                } else if (data.message) {
-                    resultArea.innerHTML = `<div class="alert alert-custom-danger">السيرفر يرفض الرابط: ${data.message}</div>`;
+                } else if (data.text) {
+                    resultArea.innerHTML = `<div class="alert alert-custom-danger">تنبيه من السيرفر: ${data.text}</div>`;
                 } else {
-                    resultArea.innerHTML = `<div class="alert alert-custom-danger">تعذر تحميل هذا الرابط. يرجى التأكد من أن الحساب ليس خاصاً (Private).</div>`;
+                    resultArea.innerHTML = `<div class="alert alert-custom-danger">عذراً، تأكد من أن حساب الفيديو "عام وليس خاص" أو تأكد من صحة الرابط.</div>`;
                 }
 
             } catch (error) {
                 console.error(error);
-                resultArea.innerHTML = `<div class="alert alert-custom-danger">حدث خطأ في جلب البيانات، قد يكون السيرفر مضغوطاً حالياً. جرب مرة أخرى.</div>`;
+                resultArea.innerHTML = `<div class="alert alert-custom-danger">حدث خطأ في جلب البيانات، تأكد من نسخ رابط المشاركة الفعلي للفيديو.</div>`;
             } finally {
                 btnSubmit.disabled = false;
                 spinner.style.display = 'none';
